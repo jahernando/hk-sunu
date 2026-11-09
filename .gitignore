@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+build/
+dist/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Papers and other reference documents are not distributed with this repo
+*.pdf
+
+# Data stays out of git; add small essential files with an explicit exception
+data/*
+!data/README.md
+!data/sk4_*.csv
+
+# OS / editors
+.DS_Store
+.vscode/
+.idea/
