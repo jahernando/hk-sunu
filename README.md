@@ -24,4 +24,5 @@ pytest
 
 ## Notebooks
 
-- `NB/01_sk_dsnb_analysis.ipynb`: the Super-Kamiokande DSNB analysis, signal and backgrounds.
+- `NB/NB01_sk_dsnb_analysis.ipynb`: the Super-Kamiokande DSNB analysis, signal and backgrounds.
+- `NB/NB02_hk_dsnb_projection.ipynb`: projection of the SK-IV analysis to one Hyper-Kamiokande tank, with neutron-tagging and spallation scenarios.

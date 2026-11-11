@@ -122,3 +122,37 @@ def test_electron_equivalent_energy_is_below_kinetic_energy():
     mass = cherenkov.MASS_MEV["mu"]
     kinetic = np.hypot(300.0, mass) - mass
     assert 0.0 < cherenkov.electron_equivalent_energy(300.0, mass) < kinetic
+
+
+def test_asimov_significance_limits():
+    # Large background, no systematics: Z -> s / sqrt(b)
+    assert stats.asimov_significance(100.0, 1e6) == pytest.approx(0.1, rel=1e-3)
+    # Background uncertainty reduces the significance
+    assert stats.asimov_significance(10.0, 10.0, 5.0) < stats.asimov_significance(10.0, 10.0)
+    assert stats.asimov_significance(10.0, 10.0, 1e-6) == pytest.approx(
+        stats.asimov_significance(10.0, 10.0), rel=1e-4)
+
+
+def test_hk_projection_reduces_to_sk4():
+    from hk_sunu import hk
+    same = hk.NtagScenario("SK-IV", 1.0, 1.0)
+    out = hk.project(hk.sk4_exposure_kton_yr(), same, spall_scale=1.0)
+    window = sk4.spectrum()[:11]
+    assert np.allclose(out["total"], window["total"], rtol=1e-3)
+    assert np.allclose(out["signal"], window["dsnb_horiuchi09"])
+
+
+def test_spallation_veto_matches_design_report():
+    from hk_sunu import hk
+    # Design Report: SK 79% and 90% become 29% and 54% with 5x the muons
+    assert 0.79**5 == pytest.approx(0.31, abs=0.01)
+    assert 0.90**5 == pytest.approx(0.59, abs=0.01)
+    eff = hk.sk4_spallation_cut_efficiency()
+    assert eff[-1] == pytest.approx(1.0, abs=0.01)
+    assert np.all(hk.spallation_cut_efficiency(4.0) <= eff + 1e-12)
+
+
+def test_binned_significance_without_systematics():
+    s, b = np.array([5.0, 3.0]), np.array([[10.0, 20.0]])
+    z_bins = np.hypot(stats.asimov_significance(5.0, 10.0), stats.asimov_significance(3.0, 20.0))
+    assert stats.binned_significance(s, b, [1e-4]) == pytest.approx(z_bins, rel=1e-3)

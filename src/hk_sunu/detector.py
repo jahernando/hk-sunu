@@ -20,4 +20,4 @@ class WaterDetector:
 
 
 SUPER_K = WaterDetector("SK", 22.5)
-HYPER_K = WaterDetector("HK", 187.0)  # one tank, Design Report fiducial mass
+HYPER_K = WaterDetector("HK", 187.0)  # one tank, 1.5 m from the ID walls
