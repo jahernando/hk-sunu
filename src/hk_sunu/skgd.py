@@ -72,7 +72,7 @@ def scenario(phase):
 def project(livetime_days, phase):
     """Expected SK-Gd spectrum per 2-MeV bin of 7.5-29.5 MeV for a livetime."""
     exposure = FIDUCIAL_KTON * livetime_days / 365.25
-    return hk.project(exposure, scenario(phase), spall_scale=1.0)
+    return hk.project(exposure, scenario(phase), spall_scale=1.0, muon_scale=1.0)
 
 
 # Neutrino 2026 update (Sekiya, plenary, slides 26-28, preliminary): NCQE 71% -> 45%

@@ -18,6 +18,9 @@ from . import sk4
 FIDUCIAL_KTON = 187.0  # 1.5 m from the ID walls (arXiv:2101.05269); 188 in PoS(ICRC2025)1215
 MUON_FLUX = {"HK": 7.55e-7, "SK": 1.54e-7}  # cm^-2 s^-1, Design Report Table XXIX (MUSIC)
 MUON_MEAN_ENERGY_GEV = {"HK": 203.0, "SK": 258.0}  # Design Report Table XXIX
+# f_mu: muon flux per unit area, HK / SK (4.90, +-20% from the MUSIC simulation).
+# It sets the dead fraction of the spallation cut, see `spallation_cut_efficiency`.
+MUON_FLUX_RATIO = MUON_FLUX["HK"] / MUON_FLUX["SK"]
 
 # Background uncertainties assumed by the HK collaboration (A. Santos, poster #474,
 # Neutrino 2026): mistag 5%, NCQE 68%, non-NCQE 5% (an aim, "better than the ~20%
@@ -46,11 +49,13 @@ class NtagScenario:
 
 
 def spallation_scale(muon_flux_ratio, muon_energy_ratio, energy_power=0.75):
-    """Isotope production per unit volume in HK relative to SK.
+    """f_sp: spallation isotope production per unit volume, HK / SK.
 
     The yield per muon grows as <E_mu>^alpha with alpha ~ 0.75 (Li and Beacom,
     arXiv:1402.4687), so the production rate scales as flux x <E_mu>^alpha.
-    The spallation cuts are assumed to keep the same survival fraction.
+    With the same cuts, the residual spallation background scales with f_sp.
+    The signal loss of the cuts is set by the muon flux instead (f_mu,
+    `MUON_FLUX_RATIO`), not by this factor.
     """
     return muon_flux_ratio * muon_energy_ratio**energy_power
 
@@ -77,26 +82,34 @@ def sk4_spallation_cut_efficiency():
     return np.clip(eff / plateau, 0.0, 1.0)
 
 
-def spallation_cut_efficiency(spall_scale):
-    """Signal efficiency of the same spallation cut with `spall_scale` x more muons.
+def spallation_cut_efficiency(muon_scale):
+    """Signal efficiency of the same spallation cut with `muon_scale` (f_mu) x the muon flux.
 
-    The cut vetoes regions around preceding muons, so its loss on uncorrelated
-    events is Poissonian, eff = exp(-lambda), and lambda grows with the muon
-    rate: eff_HK = eff_SK ** spall_scale. With a factor 5 this turns the SK
-    efficiencies of 79% and 90% into 31% and 59%, close to the 29% and 54% of
-    the HK Design Report (arXiv:1805.04163).
+    The cut vetoes space-time regions around preceding muons, so its loss on
+    uncorrelated events is Poissonian, eff = exp(-lambda), with lambda
+    proportional to the muon flux per unit area around the vertex (the vetoes
+    are local: the detector size does not enter). Hence eff_HK = eff_SK ** f_mu.
+    With f_mu = 5 this turns the SK efficiencies of 79% and 90% into 31% and
+    59%, close to the 29% and 54% of the HK Design Report (arXiv:1805.04163).
+
+    Caveats: the SK cut vetoes more around showering muons, which are rarer at
+    lower <E_mu>, so f_mu slightly overestimates the loss; and any SK loss not
+    due to random coincidence is also raised to the power f_mu.
     """
-    return sk4_spallation_cut_efficiency() ** spall_scale
+    return sk4_spallation_cut_efficiency() ** muon_scale
 
 
-def project(exposure_kton_yr, scenario, spall_scale, spallation_dominated_below=15.5,
+def project(exposure_kton_yr, scenario, spall_scale, *, muon_scale, spallation_dominated_below=15.5,
             signal_key="dsnb_horiuchi09"):
     """Expected signal and backgrounds in HK, per 2-MeV bin of 7.5-29.5 MeV.
 
     - Everything scales with exposure.
-    - The same spallation cut costs more efficiency, by eff_SK ** (spall_scale - 1),
-      on signal and on every background.
-    - The residual spallation (9Li) scales with `spall_scale`.
+    - The same spallation cut costs more efficiency, by eff_SK ** (muon_scale - 1),
+      on signal and on every background. `muon_scale` (f_mu) is the muon flux
+      ratio; it is keyword-only and required so that SK-like projections
+      (1.0) and HK ones (`MUON_FLUX_RATIO`) are always explicit.
+    - The residual spallation (9Li) scales with `spall_scale` (f_sp), the
+      isotope production ratio.
     - Events with a real neutron scale with the tagging efficiency.
     - Accidentals are proportional to the events reaching the tagging step.
       Below `spallation_dominated_below` (MeV) that sample is dominated by
@@ -108,7 +121,7 @@ def project(exposure_kton_yr, scenario, spall_scale, spallation_dominated_below=
     window = sk4.spectrum()[:11]
     x = exposure_kton_yr / sk4_exposure_kton_yr()
     r, k = scenario.efficiency_scale, scenario.mistag_scale
-    veto = sk4_spallation_cut_efficiency() ** (spall_scale - 1.0)
+    veto = sk4_spallation_cut_efficiency() ** (muon_scale - 1.0)
     pre_ntag = np.where(window["erec_hi"] <= spallation_dominated_below, spall_scale, 1.0)
 
     out = {"erec_lo": window["erec_lo"], "erec_hi": window["erec_hi"]}

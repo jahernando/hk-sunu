@@ -92,7 +92,7 @@ def _extend(per_window_bin, tail=None):
     return np.concatenate([per_window_bin, np.full(CENTRES.size - WINDOW_BINS, tail)])
 
 
-def project(exposure_ratio, efficiency_scale=1.0, mistag_scale=1.0, spall_scale=1.0):
+def project(exposure_ratio, efficiency_scale=1.0, mistag_scale=1.0, spall_scale=1.0, muon_scale=1.0):
     """Templates for another exposure, neutron tagging and spallation level.
 
     - Everything scales with `exposure_ratio` (exposure / SK-IV 2970 days).
@@ -101,9 +101,10 @@ def project(exposure_ratio, efficiency_scale=1.0, mistag_scale=1.0, spall_scale=
       `mistag_scale` k. Signal and real-neutron events that leave or enter the
       one-tag regions are moved to the != 1 regions; extra accidentals are
       only added to the one-tag regions (conservative).
-    - Spallation scales by `spall_scale`, and the SK-IV spallation cut costs
-      eff_SK ** (spall_scale - 1) on every component below 23.5 MeV, as in
-      `hk.project`.
+    - Spallation scales by `spall_scale` (f_sp, isotope production), and the
+      SK-IV spallation cut costs eff_SK ** (muon_scale - 1) (f_mu, muon flux)
+      on every component below 23.5 MeV, as in `hk.project`. The defaults
+      (1.0) are SK; for HK pass both, e.g. muon_scale=hk.MUON_FLUX_RATIO.
 
     `efficiency_scale` and `mistag_scale` may be scalars or 7-bin arrays for
     15.5-29.5 MeV; above 29.5 MeV the mean of the last three bins is used.
@@ -113,7 +114,7 @@ def project(exposure_ratio, efficiency_scale=1.0, mistag_scale=1.0, spall_scale=
     k = _extend(mistag_scale)
     acc = accidental_fraction()
     veto = np.ones(CENTRES.size)
-    veto[:WINDOW_BINS] = hk.sk4_spallation_cut_efficiency()[4:] ** (spall_scale - 1.0)
+    veto[:WINDOW_BINS] = hk.sk4_spallation_cut_efficiency()[4:] ** (muon_scale - 1.0)
 
     out = {}
     for key, t in base.items():

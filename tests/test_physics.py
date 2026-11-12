@@ -136,7 +136,7 @@ def test_asimov_significance_limits():
 def test_hk_projection_reduces_to_sk4():
     from hk_sunu import hk
     same = hk.NtagScenario("SK-IV", 1.0, 1.0)
-    out = hk.project(hk.sk4_exposure_kton_yr(), same, spall_scale=1.0)
+    out = hk.project(hk.sk4_exposure_kton_yr(), same, spall_scale=1.0, muon_scale=1.0)
     window = sk4.spectrum()[:11]
     assert np.allclose(out["total"], window["total"], rtol=1e-3)
     assert np.allclose(out["signal"], window["dsnb_horiuchi09"])
@@ -150,6 +150,23 @@ def test_spallation_veto_matches_design_report():
     eff = hk.sk4_spallation_cut_efficiency()
     assert eff[-1] == pytest.approx(1.0, abs=0.01)
     assert np.all(hk.spallation_cut_efficiency(4.0) <= eff + 1e-12)
+    assert hk.MUON_FLUX_RATIO == pytest.approx(4.90, abs=0.01)
+
+
+def test_spallation_production_and_veto_are_separate():
+    from hk_sunu import hk
+    scen = hk.NtagScenario("SK-IV", 1.0, 1.0)
+    x = hk.sk4_exposure_kton_yr()
+    base = hk.project(x, scen, 1.0, muon_scale=1.0)
+    more_isotopes = hk.project(x, scen, 4.0, muon_scale=1.0)
+    more_muons = hk.project(x, scen, 1.0, muon_scale=4.0)
+    # f_sp only changes 9Li (and accidentals in the spallation-dominated bins)
+    assert np.allclose(more_isotopes["signal"], base["signal"])
+    assert np.allclose(more_isotopes["li9"], 4.0 * base["li9"])
+    # f_mu only changes the veto efficiency
+    veto = hk.sk4_spallation_cut_efficiency() ** 3.0
+    assert np.allclose(more_muons["signal"], veto * base["signal"])
+    assert np.allclose(more_muons["li9"], veto * base["li9"])
 
 
 def test_binned_significance_without_systematics():
