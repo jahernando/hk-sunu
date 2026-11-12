@@ -80,3 +80,34 @@ def binned_significance(signal, components, rel_errors):
     bounds = [(-0.99, None)] * len(rel_errors)
     best = minimize(q, np.zeros(len(rel_errors)), bounds=bounds, method="L-BFGS-B")
     return float(np.sqrt(max(best.fun, 0.0)))
+
+
+def combined_significance(datasets, correlated=True):
+    """Median discovery significance of several binned datasets fitted together.
+
+    Each dataset is a tuple `(signal, components, rel_errors)` as in
+    `binned_significance`. With `correlated=True` there is one standard-normal
+    nuisance per background type, shared by all datasets, and it shifts each
+    dataset by its own relative uncertainty: a common flux or cross-section
+    error. With `correlated=False` each dataset has its own nuisances.
+    """
+    from scipy.optimize import minimize
+
+    datasets = [(np.asarray(s, float), np.atleast_2d(np.asarray(c, float)), np.asarray(r, float))
+                for s, c, r in datasets]
+    n_comp = datasets[0][1].shape[0]
+    n_par = n_comp if correlated else n_comp * len(datasets)
+
+    def q(theta):
+        total = np.sum(theta**2)
+        for i, (signal, components, rel) in enumerate(datasets):
+            t = theta if correlated else theta[i * n_comp:(i + 1) * n_comp]
+            observed = signal + components.sum(axis=0)
+            mean = np.clip(((1.0 + rel * t)[:, np.newaxis] * components).sum(axis=0), 1e-12, None)
+            keep = observed > 0
+            total += 2.0 * np.sum(mean - observed)
+            total += 2.0 * np.sum(observed[keep] * np.log(observed[keep] / mean[keep]))
+        return total
+
+    best = minimize(q, np.zeros(n_par), method="L-BFGS-B")
+    return float(np.sqrt(max(best.fun, 0.0)))

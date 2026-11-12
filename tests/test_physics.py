@@ -156,3 +156,22 @@ def test_binned_significance_without_systematics():
     s, b = np.array([5.0, 3.0]), np.array([[10.0, 20.0]])
     z_bins = np.hypot(stats.asimov_significance(5.0, 10.0), stats.asimov_significance(3.0, 20.0))
     assert stats.binned_significance(s, b, [1e-4]) == pytest.approx(z_bins, rel=1e-3)
+
+
+def test_combined_significance_reduces_to_binned():
+    from hk_sunu import stats
+    signal = np.array([1.0, 2.0, 1.5])
+    components = np.array([[3.0, 2.0, 4.0], [1.0, 0.5, 0.2]])
+    rel = np.array([0.2, 0.5])
+    z1 = stats.binned_significance(signal, components, rel)
+    z2 = stats.combined_significance([(signal, components, rel)])
+    assert abs(z1 - z2) < 1e-3
+
+
+def test_skgd_signal_scales_with_published_efficiency():
+    from hk_sunu import sk4, skgd
+    out = skgd.project(sk4.LIVETIME_DAYS, "SK-VII")
+    window = sk4.spectrum()[:11]
+    ratio = skgd.EFFICIENCY_NN["SK-VII"] / sk4.efficiencies()[:11]["ntag_one"]
+    assert np.allclose(out["signal"][1:], ratio[1:] * window["dsnb_horiuchi09"][1:])
+    assert np.all(out["accidental"] < window["accidental"])
