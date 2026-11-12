@@ -75,9 +75,23 @@ def project(livetime_days, phase):
     return hk.project(exposure, scenario(phase), spall_scale=1.0)
 
 
-def rel_errors(phase):
-    """Background uncertainties of a phase, in the order of `sk4.BACKGROUNDS`."""
-    return np.array([BACKGROUND_REL_ERROR[phase][key] for key in sk4.BACKGROUNDS])
+# Neutrino 2026 update (Sekiya, plenary, slides 26-28, preliminary): NCQE 71% -> 45%
+# (NN classifier validated on T2K NCQE data) and remaining 9Li rate 50% -> 30%.
+# The non-NCQE value is kept from Table 5: the slides give its pieces (flux ~20%,
+# cross section ~30%, multiplicity -32/+12% for SK-VII) but no total.
+BACKGROUND_REL_ERROR_NU2026 = {
+    phase: {**errors, "ncqe": 0.45, "li9": 0.30} for phase, errors in BACKGROUND_REL_ERROR.items()
+}
+
+
+def rel_errors(phase, update="nu2026"):
+    """Background uncertainties of a phase, in the order of `sk4.BACKGROUNDS`.
+
+    `update="nu2026"` (default) uses the Neutrino 2026 values; `update="paper"`
+    uses Table 5 of arXiv:2511.02222.
+    """
+    table = BACKGROUND_REL_ERROR_NU2026 if update == "nu2026" else BACKGROUND_REL_ERROR
+    return np.array([table[phase][key] for key in sk4.BACKGROUNDS])
 
 
 def livetimes_at(year):

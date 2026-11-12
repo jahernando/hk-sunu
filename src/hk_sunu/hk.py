@@ -19,6 +19,13 @@ FIDUCIAL_KTON = 187.0  # 1.5 m from the ID walls (arXiv:2101.05269); 188 in PoS(
 MUON_FLUX = {"HK": 7.55e-7, "SK": 1.54e-7}  # cm^-2 s^-1, Design Report Table XXIX (MUSIC)
 MUON_MEAN_ENERGY_GEV = {"HK": 203.0, "SK": 258.0}  # Design Report Table XXIX
 
+# Background uncertainties assumed by the HK collaboration (A. Santos, poster #474,
+# Neutrino 2026): mistag 5%, NCQE 68%, non-NCQE 5% (an aim, "better than the ~20%
+# of SK"). 9Li and reactor are not quoted and are kept at the SK-IV values.
+BACKGROUND_REL_ERROR_HK_POSTER = {
+    "non_ncqe": 0.05, "ncqe": 0.68, "li9": 0.60, "reactor": 1.00, "accidental": 0.05,
+}
+
 # Backgrounds whose events carry a real neutron: they scale with the tagging efficiency.
 REAL_NEUTRON = ("non_ncqe", "ncqe", "reactor", "li9")
 
