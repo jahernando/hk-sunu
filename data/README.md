@@ -15,3 +15,4 @@ ticks. They are approximate copies of published plots, not collaboration data.
 | `sk4_fig24_spectrum.csv` | Fig. 24 | Backgrounds, data and DSNB, events per 2 MeV |
 | `sk4_fig18_efficiency.csv` | Fig. 18, top | Cumulative signal efficiency in percent, one tagged neutron |
 | `sk4_fig19_candidates.csv` | Fig. 19 | Data events per 2 MeV after successive reduction steps |
+| `sk4_fig26_bestfit.csv` | Fig. 26 | Best-fit curves per region (I-VI) and category, sampled at the centres of 2-MeV bins of 15.5-79.5 MeV; extracted with `scripts/extract_sk4_fig26.py` |

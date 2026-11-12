@@ -175,3 +175,22 @@ def test_skgd_signal_scales_with_published_efficiency():
     ratio = skgd.EFFICIENCY_NN["SK-VII"] / sk4.efficiencies()[:11]["ntag_one"]
     assert np.allclose(out["signal"][1:], ratio[1:] * window["dsnb_horiuchi09"][1:])
     assert np.all(out["accidental"] < window["accidental"])
+
+
+def test_spectral_templates_match_table_xiv_and_fig24():
+    from hk_sunu import spectral
+    t = spectral._read_fig26()
+    assert abs(t["nuecc"].sum() - 109.9) / 109.9 < 0.05
+    assert abs(t["mupi"].sum() - 27.9) / 27.9 < 0.05
+    assert 1.4 < spectral.horiuchi_scale() < 1.7
+
+
+def test_spectral_projection_identity_and_scaling():
+    from hk_sunu import spectral
+    base = spectral.templates()
+    same = spectral.project(1.0)
+    for key in base:
+        assert np.allclose(base[key], same[key])
+    half = spectral.project(1.0, efficiency_scale=0.5)
+    assert np.isclose(half["dsnb"].sum(), base["dsnb"].sum())
+    assert half["dsnb"][:3].sum() < base["dsnb"][:3].sum()
